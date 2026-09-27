@@ -8,12 +8,13 @@ using UnityEngine;
 
 namespace SanabiInfiniteAir;
 
-[BepInPlugin("com.codex.sanabi.infiniteair", "SANABI Infinite Air", "0.2.4")]
+[BepInPlugin("com.codex.sanabi.infiniteair", "SANABI Infinite Air", "0.2.6")]
 public sealed class InfiniteAirPlugin : BasePlugin
 {
     internal static ConfigEntry<KeyCode> ToggleKey = null!;
     internal static ConfigEntry<float> VerticalSpeed = null!;
     internal static ConfigEntry<bool> GamepadToggle = null!;
+    internal static ConfigEntry<bool> ShowHint = null!;
     internal static ManualLogSource PluginLog = null!;
 
     public override void Load()
@@ -25,6 +26,8 @@ public sealed class InfiniteAirPlugin : BasePlugin
             "Up/down speed while infinite air is enabled.");
         GamepadToggle = Config.Bind("Controls", "GamepadToggle", true,
             "Press LB + RB together to toggle infinite air (Rewired gamepad input).");
+        ShowHint = Config.Bind("Display", "ShowHint", true,
+            "Show a brief hint near the player when infinite air is toggled.");
 
         new Harmony("com.codex.sanabi.infiniteair").PatchAll(typeof(InfiniteAirPlugin).Assembly);
         AddComponent<FlightDriver>();
@@ -35,13 +38,15 @@ public sealed class InfiniteAirPlugin : BasePlugin
 public sealed class FlightDriver : MonoBehaviour
 {
     private readonly GamepadToggleInput gamepadInput = new GamepadToggleInput();
+    private float hintUntil;
 
     public FlightDriver(IntPtr pointer) : base(pointer) { }
 
     private void Update()
     {
         PlayerBase? player = PlayerBase.Instance;
-        FlightState.Observe(player);
+        if (FlightState.Observe(player))
+            hintUntil = 0f;
         bool gamepadPressed = gamepadInput.Poll();
         if (player == null || player.IsDead || player.IsIgnoreAllInput)
             return;
@@ -50,42 +55,45 @@ public sealed class FlightDriver : MonoBehaviour
             (InfiniteAirPlugin.GamepadToggle.Value && gamepadPressed))
         {
             FlightState.Toggle();
+            hintUntil = Time.unscaledTime + 0.9f;
             InfiniteAirPlugin.PluginLog.LogInfo("Infinite Air " + (FlightState.Enabled ? "enabled" : "disabled"));
         }
     }
 
     private void OnGUI()
     {
+        if (!InfiniteAirPlugin.ShowHint.Value || Time.unscaledTime >= hintUntil)
+            return;
+
         PlayerBase? player = PlayerBase.Instance;
         if (player == null || player.IsDead)
             return;
 
-        string toggle = InfiniteAirPlugin.ToggleKey.Value +
-            (InfiniteAirPlugin.GamepadToggle.Value ? " / LB+RB" : "");
+        Camera? camera = Camera.main;
+        if (camera == null)
+            return;
+        Vector3 screenPoint = camera.WorldToScreenPoint(player.transform.position);
+        if (screenPoint.z <= 0f)
+            return;
+
         var style = new GUIStyle(GUI.skin.label);
         style.fontSize = Mathf.Clamp(Mathf.RoundToInt(Screen.height / 72f), 14, 20);
         style.normal.textColor = Color.white;
         style.wordWrap = false;
 
-        string firstLine = FlightState.Enabled
-            ? "AIR ON  W/S, Arrows, Stick/D-pad: height"
-            : "AIR OFF  " + toggle + ": on";
-        string secondLine = FlightState.Enabled ? toggle + ": land" : "";
-        float availableWidth = Screen.width - 32f;
-        if (FlightState.Enabled && style.CalcSize(new GUIContent(firstLine)).x > availableWidth)
-            firstLine = "AIR ON  Up/Down: height";
-
-        Vector2 firstSize = style.CalcSize(new GUIContent(firstLine));
-        Vector2 secondSize = FlightState.Enabled
-            ? style.CalcSize(new GUIContent(secondLine)) : Vector2.zero;
-        float width = Mathf.Min(Screen.width - 16f, Mathf.Max(firstSize.x, secondSize.x) + 16f);
-        float height = firstSize.y + secondSize.y + 12f;
-        var panel = new Rect(8f, 8f, width, height);
+        string hint = FlightState.Enabled ? "AIR: ON" : "AIR: OFF";
+        Vector2 textSize = style.CalcSize(new GUIContent(hint));
+        float width = Mathf.Min(Screen.width - 16f, textSize.x + 16f);
+        float height = textSize.y + 8f;
+        float x = Mathf.Clamp(Mathf.Round(screenPoint.x - width / 2f), 8f, Screen.width - width - 8f);
+        float playerY = Screen.height - screenPoint.y;
+        float aboveY = playerY - height - 40f;
+        float y = Mathf.Clamp(Mathf.Round(aboveY >= 8f ? aboveY : playerY + 32f),
+            8f, Screen.height - height - 8f);
+        var panel = new Rect(x, y, width, height);
 
         GUI.Box(panel, new GUIContent(""), GUI.skin.box);
-        GUI.Label(new Rect(16f, 12f, width - 16f, firstSize.y), firstLine, style);
-        if (FlightState.Enabled)
-            GUI.Label(new Rect(16f, 12f + firstSize.y, width - 16f, secondSize.y), secondLine, style);
+        GUI.Label(new Rect(x + 8f, y + 4f, width - 16f, textSize.y), hint, style);
     }
 }
 
@@ -94,14 +102,15 @@ internal static class FlightState
     private static IntPtr currentPlayer;
     internal static bool Enabled { get; private set; }
 
-    internal static void Observe(PlayerBase? player)
+    internal static bool Observe(PlayerBase? player)
     {
         IntPtr pointer = player == null ? IntPtr.Zero : player.Pointer;
         if (currentPlayer == pointer)
-            return;
+            return false;
 
         currentPlayer = pointer;
         Enabled = false;
+        return true;
     }
 
     internal static void Toggle() => Enabled = !Enabled;

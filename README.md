@@ -9,7 +9,7 @@
 | `F8` 或同时按住 `LB+RB` | 开启／关闭无限悬空 |
 | `W/S`、方向键上下、手柄上下方向输入 | 开启后在空中升降 |
 
-左上角会显示简短操作提示。组合键长按只切换一次，松开后可再次触发。水平移动仍由游戏原本的输入处理。`F8`、手柄开关及升降速度可在首次运行后生成的 `BepInEx/config/com.codex.sanabi.infiniteair.cfg` 中调整。
+切换时角色附近只显示 `AIR: ON` 或 `AIR: OFF`，0.9 秒后自动消失。组合键长按只切换一次，松开后可再次触发。水平移动仍由游戏原本的输入处理。`F8`、手柄开关、升降速度及是否显示状态提示，可在首次运行后生成的 `BepInEx/config/com.codex.sanabi.infiniteair.cfg` 中调整。
 
 ## 安装
 
@@ -21,7 +21,7 @@
 
 ## 验证范围
 
-开发机使用 Steam Windows 版、Unity 2019.4.41、IL2CPP、BepInEx 6.0.0-pre.1；Steam build ID 为 `21675470`。已在游戏内核对键盘升降、`LB+RB` 开关和左上角提示；DLC 角色补丁已编译及加载，但尚未分别完成实际游玩验收。其他游戏构建版本未验证。
+开发机使用 Steam Windows 版、Unity 2019.4.41、IL2CPP、BepInEx 6.0.0-pre.1；Steam build ID 为 `21675470`。已在游戏内核对键盘升降及 `LB+RB` 开关；角色附近状态提示仍待视觉复核。DLC 角色补丁已编译及加载，但尚未分别完成实际游玩验收。其他游戏构建版本未验证。
 
 ## 源码构建
 
@@ -33,4 +33,4 @@ dotnet build src/SanabiInfiniteAir.csproj -c Release -p:SanabiGameDir="C:\path\t
 
 生成的 DLL 位于 `src/bin/Release/netstandard2.1/SanabiInfiniteAir.dll`。源码不包含游戏文件、BepInEx 程序集或用户存档。
 
-English: This BepInEx IL2CPP mod enables controllable infinite air movement in SANABI. Press F8 or LB+RB to toggle; use W/S, Up/Down or your gamepad's vertical movement input to adjust height while airborne. Follow the installation steps above; the required BepInEx version is linked there.
+English: This BepInEx IL2CPP mod enables controllable infinite air movement in SANABI. Press F8 or LB+RB to toggle; use W/S, Up/Down or your gamepad's vertical movement input to adjust height while airborne. A brief `AIR: ON` / `AIR: OFF` status appears near the character for 0.9 seconds after toggling; the in-game hint can be disabled with `ShowHint = false` in the config. Follow the installation steps above; the required BepInEx version is linked there.
