@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace SanabiInfiniteAir;
 
-[BepInPlugin("com.codex.sanabi.infiniteair", "SANABI Infinite Air", "0.2.6")]
+[BepInPlugin("com.codex.sanabi.infiniteair", "SANABI Infinite Air", "0.2.8")]
 public sealed class InfiniteAirPlugin : BasePlugin
 {
     internal static ConfigEntry<KeyCode> ToggleKey = null!;
@@ -85,11 +85,13 @@ public sealed class FlightDriver : MonoBehaviour
         Vector2 textSize = style.CalcSize(new GUIContent(hint));
         float width = Mathf.Min(Screen.width - 16f, textSize.x + 16f);
         float height = textSize.y + 8f;
-        float x = Mathf.Clamp(Mathf.Round(screenPoint.x - width / 2f), 8f, Screen.width - width - 8f);
+        float sideGap = Mathf.Clamp(Screen.height / 24f, 36f, 72f);
+        float rightX = screenPoint.x + sideGap;
+        float leftX = screenPoint.x - sideGap - width;
+        float x = rightX + width + 8f <= Screen.width ? rightX : leftX;
+        x = Mathf.Clamp(Mathf.Round(x), 8f, Screen.width - width - 8f);
         float playerY = Screen.height - screenPoint.y;
-        float aboveY = playerY - height - 40f;
-        float y = Mathf.Clamp(Mathf.Round(aboveY >= 8f ? aboveY : playerY + 32f),
-            8f, Screen.height - height - 8f);
+        float y = Mathf.Clamp(Mathf.Round(playerY - height / 2f), 8f, Screen.height - height - 8f);
         var panel = new Rect(x, y, width, height);
 
         GUI.Box(panel, new GUIContent(""), GUI.skin.box);
