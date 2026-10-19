@@ -1,5 +1,3 @@
-![GitHub Release Downloads](https://img.shields.io/github/downloads/boyl/sanabi-infinite-air/total?label=Downloads&color=blue)
-
 # SANABI Infinite Air / 闪避刺客无限悬空
 
 适用于 Steam 版《闪避刺客》（SANABI）的 BepInEx IL2CPP Mod。开启后，角色在空中可以持续水平移动和调整高度；再次切换即可恢复正常下落。代码分别接入主角和 DLC 角色。
